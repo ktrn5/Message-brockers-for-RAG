@@ -1,0 +1,39 @@
+services:
+  #ZOOKEEPER (нужен Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  #APACHE KAFKA - непосредственно сам бркер
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      # основные настройки Kafka
+      KAFKA_BROKER_ID: 1 # id брокера (нужен в кластере)
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181   # адпес zookeper, к которому подключается кафка
+      #настройка слушателей
+      #используем незашифрованное соединение (PLAINTEXT)
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      # PLAINTEXT_HOST://localhost:9092 — это адрес, по которому к Kafka подключается к скрипту
+      #настройки репликации
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # репликация топика с оффсетам
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1  #репликация для транзакций
+
+  #RABBIT MQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"      #порт для подключения из Python (pika)
+    environment:
+      RABBITMQ_DEFAULT_USER: quest      # Логин по умолчанию для RabbitMQ
+      RABBITMQ_DEFAULT_PASS: quest      # Пароль по умолчанию (очень удобно для тестов)
